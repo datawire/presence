@@ -1,0 +1,25 @@
+*.pyc
+*.*~
+*~
+*.class
+.cache
+.eggs
+*.egg-info
+build
+tags
+dist
+venv
+virtualenv
+
+# --- Intellij IDEA ---
+*.iml
+.idea
+
+# --- Build and Test Automation ---
+tmp
+*.tfstate
+*.tfstate.backup
+test_*.xml
+
+# --- KDE ---
+.directory
