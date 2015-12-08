@@ -1,0 +1,3 @@
+---
+lookup: net('eth0')
+watson_configs: []

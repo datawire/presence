@@ -10,6 +10,7 @@ tags
 dist
 venv
 virtualenv
+dev
 
 # --- Intellij IDEA ---
 *.iml

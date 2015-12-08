@@ -1,2 +1,5 @@
 ---
-type: quux_<%= ENV['presence_test_environment_id'] %>bar
+lookup: <%= ENV['DW_PRESENCE_LOOKUP'] %>
+watson_configs:
+  - /etc/datawire/watson-foo.yml
+  - /etc/datawire/watson-bar.yml

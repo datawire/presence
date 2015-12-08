@@ -1,4 +1,5 @@
 docopt
+netifaces
 pykwalify
 pyyaml
 pytest

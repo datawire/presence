@@ -1,0 +1,5 @@
+---
+lookup: net('eth0')
+watson_configs:
+  - /etc/datawire/watson-foo.yml
+  - /etc/datawire/watson-foo.yml

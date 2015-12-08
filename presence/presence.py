@@ -28,6 +28,7 @@ Options:
 """
 
 import abc
+import netifaces
 import os
 import re
 import yaml
@@ -38,44 +39,88 @@ from pykwalify.core import Core
 config_schema = {
     'type': 'map',
     'mapping': {
-        'type': {'type': 'text', 'required': True},
-        'custom': {'type': 'text'}
+        'lookup': {
+            'type': 'text',
+            'required': True
+        },
+        'watson_configs': {
+            'type': 'seq',
+            'required': True,
+            'range': {'min': 1, 'max': 1000},
+            'sequence': [{
+                'type': 'text',
+                'unique': True,
+            }]
+        }
     }
 }
 
-class PresenceInfo(object):
-    pass
+def update_watson_config(external_ip, paths, backup=True):
+    from urlparse import urlsplit, urlunsplit
 
-class Discoverer(object):
+    for path in paths:
+        doc = {}
+        with open(path, 'r') as stream:
+            doc = yaml.load(stream)
 
-    __metaclass__ = abc.ABCMeta
+        parsed_url = urlsplit(doc['service']['url'])
+        replaced_url = parsed_url._replace(netloc="{}:{}".format(external_ip, parsed_url.port))
+        doc['service']['url'] = urlunsplit(replaced_url)
 
-    @abc.abstractmethod
-    def discover(self):
-        return
-
-class PresenceConfig(yaml.YAMLObject):
-
-    yaml_tag = u'!PresenceConfig'
-
-    def __init__(self, env_type, env_plugin=None):
-        self.env_type = env_type
-        self.env_plugin = env_plugin
+        with open(path, 'w+') as stream:
+            yaml.dump(doc, stream)
 
 
+def parse_lookup(text):
 
-class Presence(object):
+    """parses a lookup string such as net('eth0')
 
-    def __init__(self, discoverer):
-        self.discoverer = discoverer
+    :param text: the lookup string
+    :return: a tuple pair of the parsed lookup_id and the provided args.
+    """
 
-    def discover(self):
-        return self.discoverer.discover()
+    pattern = re.compile(r'^(echo|exec|inet|http)\((.*)\)$')
+    match = pattern.match(text)
+    if match:
+        lookup_id, raw_args = pattern.match(text).groups()
+        if raw_args is None:
+            raw_args = []
+        else:
+            raw_args = raw_args.split(',')
 
-    def save(self):
-        pass
+        return lookup_id, [x.strip() for x in raw_args]
+    else:
+        raise ValueError('unable to parse lookup (lookup: {})'.format(text))
+
+
+def lookup(lookup_id, *args):
+
+    """executes the specified lookup by ID with the provided arguments
+
+    :param lookup_id:
+    :param args:
+    :return:
+    """
+
+    if lookup_id == 'net':
+        return netifaces.interfaces(args[0])[2][0]['addr']
+    elif lookup_id == 'echo':
+        return ','.join(args)
+    elif lookup_id == 'exec':
+        return 'NOT IMPLEMENTED'
+    elif lookup_id == 'http':
+        return 'NOT IMPLEMENTED'
+
 
 def load_config(path):
+
+    """validates, loads and configures the yaml document at the specified path
+
+    :param path: the path to the file
+    :return: the parsed yaml document
+    :raises SchemaError: if the yaml document does not validate
+    """
+
     validator = Core(source_file=path, schema_data=config_schema)
     validator.validate(raise_exception=True)
 
@@ -97,8 +142,13 @@ def load_config(path):
 def run_presence(args):
     config = load_config(args['--config'])
 
+    lookup_id, lookup_args = parse_lookup(config['lookup'])
+    address = lookup(lookup_id, str(lookup_args).split(','))
+    update_watson_config(address, list(config['watson_configs']))
+
 def main(argv):
     exit(run_presence(docopt(__doc__, argv=argv, version="presence {0}".format('dev'))))
 
 if __name__ == "__main__":
-    pass
+    import sys
+    main(sys.argv)

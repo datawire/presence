@@ -1,5 +1,5 @@
 ---
-# file: config_valid.yml
+# file: dev.yml
 
 # ----------------------------------------------------------------------------------------------------------------------
 # "lookup": string
@@ -34,7 +34,6 @@ lookup: net('eth0')
 # "watson_configs": list<string>
 #
 # indicates the watson configuration files that will be updated with the discovered IP address information.
-#
 watson_configs:
-  - /etc/datawire/watson-foo.yml
-  - /etc/datawire/watson-bar.yml
+  - dev/watson-foo.yml
+  - dev/watson-bar.yml

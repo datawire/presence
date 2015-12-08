@@ -1,2 +1,6 @@
 ---
-custom: file:///the/path/is/irrelevant
+# file: config_invalid.yml
+this_should_be_lookup: net('eth0')
+watson_configs:
+  - /etc/datawire/watson-foo.yml
+  - /etc/datawire/watson-bar.yml
