@@ -1,0 +1,4 @@
+docopt
+pykwalify
+pyyaml
+pytest

@@ -14,18 +14,20 @@
 
 from setuptools import setup
 
+test_requirements=['pytest']
+
 setup(
     name='datawire-presence',
     version='0.0.1',
-    entry_points=[
-      'console_scripts': [
-          'presence = presence.command:main'
-      ]
-    ]
+    entry_points={
+        "console_scripts": [
+            "presence = presence.command:main",
+        ]
+    },
     setup_requires=[
-      'pytest-runner'
+        'pytest-runner'
     ],
     tests_require=[
-      'pytest'
+        'pytest'
     ]
 )

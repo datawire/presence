@@ -1,0 +1,2 @@
+---
+type: quux_<%= ENV['presence_test_environment_id'] %>bar
