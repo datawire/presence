@@ -1,6 +1,7 @@
 # Datawire Presence
 
 [![Build Status](https://travis-ci.org/datawire/presence.svg)](https://travis-ci.org/datawire/presence)
+[![Coverage Status](https://coveralls.io/repos/datawire/presence/badge.svg?branch=master&service=github)](https://coveralls.io/github/datawire/presence?branch=master)
 
 Presence is a Python program that performs runtime environment information discovery.
 
