@@ -33,9 +33,9 @@ import netifaces
 import os
 import re
 import yaml
+import _metadata
 
 from docopt import docopt
-from presence import _metadata
 from pykwalify.core import Core
 from subprocess import Popen, check_output, STDOUT
 
