@@ -3,5 +3,6 @@ netifaces
 pykwalify
 pyyaml
 pytest
+pytest-mock
 requests
 responses

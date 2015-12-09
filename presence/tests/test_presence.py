@@ -14,7 +14,6 @@
 
 import os
 import pytest
-import requests
 import responses
 
 from presence import presence
@@ -25,7 +24,14 @@ from pykwalify.errors import SchemaError
 test_data_path = os.path.join(os.path.dirname(__file__), 'data')
 
 def fixture_path(name):
+
+    """Gets the path to a test data fixture"""
+
     return os.path.join(test_data_path, name)
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Test Cases
+# ----------------------------------------------------------------------------------------------------------------------
 
 def test_validate_result_fails_with_invalid_date():
     with pytest.raises(PresenceError) as se:
