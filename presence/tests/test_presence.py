@@ -20,6 +20,7 @@ from presence import presence
 from presence.presence import PresenceError
 
 from pykwalify.errors import SchemaError
+from mock import patch, MagicMock
 
 test_data_path = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -32,6 +33,23 @@ def fixture_path(name):
 # ----------------------------------------------------------------------------------------------------------------------
 # Test Cases
 # ----------------------------------------------------------------------------------------------------------------------
+
+def test_lookup_for_unknown():
+    assert presence.lookup('NOT_A_REAL_LOOKUP_TYPE', []) == 'unknown'
+    assert presence.lookup('NOT_A_REAL_LOOKUP_TYPE', ['foo', 'bar']) == 'unknown'
+
+def test_lookup_for_echo():
+    assert presence.lookup('echo', ['foo', 'bar', 'baz']) == 'foo,bar,baz'
+
+@patch('presence.presence.call_http', MagicMock(return_value={'external_address': 'NOT_IMPORTANT'}))
+def test_lookup_for_http():
+    presence.lookup('http', ['GET', 'http://10.0.0.2/api/discover'])
+    presence.call_http.assert_called_with(['GET', 'http://10.0.0.2/api/discover'])
+
+@patch('presence.presence.call_executable', MagicMock(return_value={'external_address': 'NOT_IMPORTANT'}))
+def test_lookup_for_exec():
+    presence.lookup('exec', ['/opt/not/important/get_ip'])
+    presence.call_executable.assert_called_with(['/opt/not/important/get_ip'])
 
 def test_validate_result_fails_with_invalid_date():
     with pytest.raises(PresenceError) as se:

@@ -212,12 +212,12 @@ def lookup(lookup_id, *args):
 
     switch = {
         'net': get_network_interface_address,
-        'echo': lambda: ','.join(args),
+        'echo': lambda l_args: ','.join(l_args),
         'exec': call_executable,
-        'url': call_http
+        'http': call_http
     }
 
-    func = switch.get(lookup_id, lambda: 'unknown')
+    func = switch.get(lookup_id, lambda l_args: 'unknown')
     return func(*args)
 
 
