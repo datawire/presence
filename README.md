@@ -6,18 +6,21 @@ Presence is a Python program that performs runtime environment information disco
 
 Presence looks for configuration in `/etc/datawire/presence.yml`
 
+Example:
 ```yaml
 ---
-type: <ec2|custom>
+lookup: net(eth0)
+watson_plugins:
+ - /etc/datawire/watson.yml
 ```
 
-## Supported Environments
+## Supported Lookups
 
 1. ec2
 2. docker
 3. custom (see: Custom Environment Plugin)
 
-# Custom Environment Information Plugin
+# Custom Lookup Plugin
 
 Environments can be unique and it is not possible for Presence to support every known configuration. 
 
