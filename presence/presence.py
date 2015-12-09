@@ -32,13 +32,16 @@ import json
 import netifaces
 import os
 import re
+import requests
 import yaml
 import _metadata
 
 from docopt import docopt
 from pykwalify.core import Core
+from pykwalify.errors import SchemaError
 from subprocess import Popen, check_output, STDOUT
 
+# schema for the configuration format used by the program.
 config_schema = {
     'type': 'map',
     'mapping': {
@@ -50,34 +53,119 @@ config_schema = {
             'type': 'seq',
             'required': True,
             'range': {'min': 1, 'max': 1000},
-            'sequence': [{
-                'type': 'text',
-                'unique': True,
-            }]
+            'sequence': [
+                {'type': 'text', 'unique': True}
+            ]
+        },
+        'backup_watson_configs': {
+            'type': 'bool'
         }
     }
 }
 
-def call_webservice(args):
+# schema for data sent into the program from an external source such as URL, program plugin, or standard input.
+result_schema = {
+    'type': 'map',
+    'mapping': {
+        'external_address': {'type': 'text', 'required': True}
+    }
+}
+
+class PresenceError(Exception):
     pass
 
+def validate_result(data):
+    try:
+        validator = Core(source_data=data, schema_data=result_schema)
+        validator.validate(raise_exception=True)
+    except SchemaError as se:
+        raise PresenceError(se)
+
+    return data
+
+def get_network_interface_address(name):
+
+    """Queries a local network interface for its IP address.
+
+    Args:
+        name: The name of the network address (e.g. 'eth0')
+
+    Raises:
+        PresenceError: If the returned data is invalid.
+    """
+
+    external_address = netifaces.interfaces(name)[2][0]['addr']
+    return {'external_address': external_address}
+
+def call_http(method, url):
+
+    """Invokes a HTTP(S) URL to retrieve the network address.
+
+    Args:
+        method: The HTTP method to use.
+        url: The URL to query.
+
+    Returns:
+        A dictionary containing a single-key "external_address" that indicates the host machines IP.
+
+    Raises:
+        PresenceError: Raised if the returned data is invalid or the call fails for some reason.
+    """
+
+    resp = requests.request(method, url)
+    data = resp.json()
+    return validate_result(data)
+
+
 def call_executable(command):
-    out = check_output(command.split(), stderr=STDOUT, close_fds=True)
-    return parse_response(str(out))
 
-def parse_response(raw):
-    return json.dumps(raw)
+    """Invokes an external program to retrieve the network address.
 
-def update_watson_config(external_ip, paths, backup=True):
+    Args:
+        command: The full command to run.
+
+    Returns:
+        A dictionary containing a single-key "external_address" that indicates the host machines IP.
+
+    Raises:
+        PresenceError: Raised if the returned data is invalid or the call fails for some reason.
+    """
+
+    out = check_output(command, stderr=STDOUT, close_fds=True)
+    return validate_result(json.dumps(out if not None else '{}'))
+
+
+def update_watson_config(external_address, paths, backup=False):
+
+    """Updates a Watson configuration file.
+
+    Replaces the host information in the Watson service URL with a network address that is known to be public.
+
+    Args:
+        external_address: The address that is reachable.
+        paths: A list of one or more Datawire Watson configuration files.
+        backup: Whether the file being modified should be backed up before modification
+
+    Returns:
+        A dictionary containing a single-key "external_address" that indicates the host machines IP.
+
+    Raises:
+        PresenceError: Raised if a configuration file cannot be updated for some reason.
+    """
+
     from urlparse import urlsplit, urlunsplit
+    from shutil import copyfile
 
     for path in paths:
+        if backup:
+            copyfile(path, path + '.bak')
+
         doc = {}
         with open(path, 'r') as stream:
             doc = yaml.load(stream)
 
         parsed_url = urlsplit(doc['service']['url'])
-        replaced_url = parsed_url._replace(netloc="{}:{}".format(external_ip, parsed_url.port))
+        replaced_url = parsed_url._replace(netloc="{}:{}".format(external_address, parsed_url.port))
         doc['service']['url'] = urlunsplit(replaced_url)
 
         with open(path, 'w+') as stream:
@@ -86,13 +174,20 @@ def update_watson_config(external_ip, paths, backup=True):
 
 def parse_lookup(text):
 
-    """parses a lookup string such as net('eth0')
+    """Parse a lookup function into its name and argument list.
 
-    :param text: the lookup string
-    :return: a tuple pair of the parsed lookup_id and the provided args.
+    Args:
+        text: The raw text
+
+    Returns:
+        A tuple in the format (lookup_name, lookup_args). The lookup arguments can be an empty list if there were none
+        provided
+
+    Raises:
+        ValueError: If the lookup function cannot be parsed.
     """
 
-    pattern = re.compile(r'^(echo|exec|inet|http)\((.*)\)$')
+    pattern = re.compile(r'^(echo|exec|net|url)\((.*)\)$')
     match = pattern.match(text)
     if match:
         lookup_id, raw_args = pattern.match(text).groups()
@@ -115,14 +210,15 @@ def lookup(lookup_id, *args):
     :return:
     """
 
-    if lookup_id == 'net':
-        return netifaces.interfaces(args[0])[2][0]['addr']
-    elif lookup_id == 'echo':
-        return ','.join(args)
-    elif lookup_id == 'exec':
-        return 'NOT IMPLEMENTED'
-    elif lookup_id == 'http':
-        return 'NOT IMPLEMENTED'
+    switch = {
+        'net': get_network_interface_address,
+        'echo': lambda: ','.join(args),
+        'exec': call_executable,
+        'url': call_http
+    }
+
+    func = switch.get(lookup_id, lambda: 'unknown')
+    return func(*args)
 
 
 def load_config(path):

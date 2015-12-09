@@ -4,3 +4,4 @@ pykwalify
 pyyaml
 pytest
 requests
+responses

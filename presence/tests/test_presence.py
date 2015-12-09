@@ -14,14 +14,40 @@
 
 import os
 import pytest
+import requests
+import responses
 
 from presence import presence
+from presence.presence import PresenceError
+
 from pykwalify.errors import SchemaError
 
 test_data_path = os.path.join(os.path.dirname(__file__), 'data')
 
 def fixture_path(name):
     return os.path.join(test_data_path, name)
+
+def test_validate_result_fails_with_invalid_date():
+    with pytest.raises(PresenceError) as se:
+        presence.validate_result({'not_the_correct_key': 'foobar'})
+
+def test_validate_result_succeeds():
+    assert presence.validate_result({'external_address': '10.0.0.2'}) == {'external_address': '10.0.0.2'}
+
+@responses.activate
+def test_raise_error_if_call_http_result_is_invalid_structure():
+    responses.add(responses.GET, 'http://10.0.0.1/api/foo/bar', status=200, body='{}')
+    with pytest.raises(PresenceError) as pe:
+        presence.call_http('GET', 'http://10.0.0.1/api/foo/bar')
+
+@responses.activate
+def test_raise_error_if_call_http_result_is_invalid_structure():
+    responses.add(responses.GET, 'http://10.0.0.1/api/foo/bar', status=200, body='{"external_address": "10.0.0.2"}')
+    data = presence.call_http('GET', 'http://10.0.0.1/api/foo/bar')
+    assert data == {'external_address': '10.0.0.2'}
+
+def test_raise_error_if_call_http_fails():
+    pass
 
 def test_parse_lookup():
     for actual, expected in {
