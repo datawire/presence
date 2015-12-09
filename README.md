@@ -1,5 +1,7 @@
 # Datawire Presence
 
+[![Build Status](https://travis-ci.org/datawire/presence.svg)](https://travis-ci.org/datawire/presence)
+
 Presence is a Python program that performs runtime environment information discovery.
 
 # Configuration
