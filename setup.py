@@ -28,7 +28,7 @@ setup(
     author_email=metadata["__email__"],
     url=metadata["__uri__"],
     license=metadata["__license__"],
-    packages=['bakerstreet'],
+    packages=['presence'],
     include_package_data=True,
     install_requirements=[
         'docopt',
