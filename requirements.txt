@@ -3,3 +3,4 @@ netifaces
 pykwalify
 pyyaml
 pytest
+requests

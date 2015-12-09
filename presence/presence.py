@@ -27,14 +27,16 @@ Options:
     --version           Show the version.
 """
 
-import abc
+import json
 import netifaces
 import os
 import re
 import yaml
 
 from docopt import docopt
+from presence import _metadata
 from pykwalify.core import Core
+from subprocess import Popen, check_output, STDOUT
 
 config_schema = {
     'type': 'map',
@@ -54,6 +56,16 @@ config_schema = {
         }
     }
 }
+
+def call_webservice(args):
+    pass
+
+def call_executable(command):
+    out = check_output(command.split(), stderr=STDOUT, close_fds=True)
+    return parse_response(str(out))
+
+def parse_response(raw):
+    return json.dumps(raw)
 
 def update_watson_config(external_ip, paths, backup=True):
     from urlparse import urlsplit, urlunsplit
@@ -147,7 +159,7 @@ def run_presence(args):
     update_watson_config(address, list(config['watson_configs']))
 
 def main(argv):
-    exit(run_presence(docopt(__doc__, argv=argv, version="presence {0}".format('dev'))))
+    exit(run_presence(docopt(__doc__, argv=argv, version="presence {0}".format(_metadata.__version__))))
 
 if __name__ == "__main__":
     import sys
